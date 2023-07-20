@@ -1,5 +1,6 @@
 from loguru import logger
 
+from config import bsc
 from models.zk_bridge_client import ZKBridgeClient
 from utils import load_keys
 
@@ -7,12 +8,10 @@ from utils import load_keys
 def main():
     keys = load_keys()
 
-    for key in keys:
+    for private_key in keys:
         test_client = ZKBridgeClient(
-            key,
-            to_chain="polygon",
-            from_chain=None,
-            network="bsc",
+            private_key=private_key,
+            network=bsc,
         )
 
         test_client.load_profile()

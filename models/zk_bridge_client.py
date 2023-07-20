@@ -6,7 +6,6 @@ from web3 import Web3
 
 from config import chains, headers, rpcs
 from models.network import Network
-from nfts import NFTs
 
 from .base_client import BaseClient
 
