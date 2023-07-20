@@ -163,3 +163,5 @@ cython_debug/
 private_keys.txt
 
 .DS_Store
+
+.vs_code
