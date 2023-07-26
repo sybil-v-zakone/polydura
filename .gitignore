@@ -162,6 +162,9 @@ cython_debug/
 # Private keys
 private_keys.txt
 
+database.json
+proxies.txt
+
 .DS_Store
 
 .vs_code/

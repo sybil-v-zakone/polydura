@@ -1,21 +1,31 @@
 from typing import Optional
 
+import requests
+from fake_useragent import UserAgent
 from loguru import logger
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
-from .network import Network
+from .chain import Chain
 
 
 class BaseClient:
     def __init__(
         self,
         private_key: str,
-        network: Network,
+        chain: Chain,
+        proxy,
     ) -> None:
         self.private_key = private_key
-        self.network = network
-        self.w3 = Web3(Web3.HTTPProvider(endpoint_uri=self.network.rpc))
+        self.chain = chain
+        self.proxy = proxy
+        self.user_agent = UserAgent().random
+        self.session = self.create_session()
+        self.w3 = Web3(
+            Web3.HTTPProvider(
+                endpoint_uri=self.chain.rpc, session=self.session
+            )
+        )
         self.public_key = Web3.to_checksum_address(
             self.w3.eth.account.from_key(private_key).address
         )
@@ -51,27 +61,25 @@ class BaseClient:
         to,
         data=None,
         from_=None,
-        gas_coefficient=1.0,
+        gas_multiplier=1.0,
         value=None,
         max_priority_fee_per_gas: Optional[int] = None,
         max_fee_per_gas: Optional[int] = None,
     ):
         if not from_:
-            from_ = self.address
+            from_ = self.public_key
 
         tx_params = {
             "chainId": self.w3.eth.chain_id,
-            "nonce": self.w3.eth.get_transaction_count(self.address),
+            "nonce": self.w3.eth.get_transaction_count(self.public_key),
             "from": Web3.to_checksum_address(from_),
             "to": Web3.to_checksum_address(to),
         }
         if data:
             tx_params["data"] = data
 
-        if self.network.eip1559_tx:
-            w3 = Web3(
-                provider=Web3.HTTPProvider(endpoint_uri=self.network.rpc)
-            )
+        if self.chain.eip1559_tx:
+            w3 = Web3(provider=Web3.HTTPProvider(endpoint_uri=self.chain.rpc))
             w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
             last_block = w3.eth.get_block("latest")
@@ -82,46 +90,68 @@ class BaseClient:
                     )
                 )
             if not max_fee_per_gas:
-                base_fee = int(last_block["baseFeePerGas"] * gas_coefficient)
+                base_fee = int(last_block["baseFeePerGas"] * gas_multiplier)
                 max_fee_per_gas = base_fee + max_priority_fee_per_gas
 
             tx_params["maxPriorityFeePerGas"] = max_priority_fee_per_gas
             tx_params["maxFeePerGas"] = max_fee_per_gas
 
         else:
-            tx_params["gasPrice"] = self.w3.eth.gas_price
+            if self.chain.chain_id == 56:
+                tx_params["gasPrice"] = Web3.to_wei(1, "gwei")
+            else:
+                tx_params["gasPrice"] = self.w3.eth.gas_price
 
         if value:
             tx_params["value"] = value
 
         try:
-            tx_params["gas"] = int(
-                self.w3.eth.estimate_gas(tx_params) * gas_coefficient
-            )
+            gas_estimate = self.w3.eth.estimate_gas(tx_params)
+            logger.info(f"Gas estimate: {gas_estimate}")
+            tx_params["gas"] = int(gas_estimate * gas_multiplier)
         except Exception as e:
-            logger.exception("Tx failed")
+            logger.exception(f"Error estimating gas: {e}")
             return None
 
-        sign = self.w3.eth.account.sign_transaction(
-            tx_params, self.private_key
-        )
-        return self.w3.eth.send_raw_transaction(sign.rawTransaction)
+        try:
+            sign = self.w3.eth.account.sign_transaction(
+                tx_params, self.private_key
+            )
+            return self.w3.eth.send_raw_transaction(sign.rawTransaction)
+        except Exception as e:
+            logger.exception(f"Error sending transaction: {e}")
+            return None
 
     def verify_tx(self, tx_hash) -> bool:
         try:
             data = self.w3.eth.wait_for_transaction_receipt(
                 tx_hash, timeout=200
             )
+            if data is None:
+                logger.warning(
+                    f"{self.public_key} | transaction receipt not available yet."
+                )
+                return False
+
             if "status" in data and data["status"] == 1:
                 logger.success(
-                    f"{self.address} | transaction was successful: {tx_hash.hex()}"
+                    f"{self.public_key} | transaction was successful: {tx_hash.hex()}"
                 )
                 return True
             else:
                 logger.error(
-                    f'{self.address} | transaction failed {data["transactionHash"].hex()}'
+                    f'{self.public_key} | transaction failed {data["transactionHash"].hex()}'
                 )
                 return False
         except Exception as err:
-            logger.exception(f"{self.address} | unexpected error: {err}")
+            logger.exception(f"{self.public_key} | unexpected error: {err}")
             return False
+
+    def create_session(self) -> requests.Session:
+        session = requests.Session()
+        if self.proxy:
+            session.proxies = {
+                "http": f"http://{self.proxy}",
+                "https": f"http://{self.proxy}",
+            }
+        return session
