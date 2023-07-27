@@ -33,8 +33,8 @@ class NFT:
         mint_chains: Tuple[Chain],
         chain_to_contract_mapping: dict,
         abi,
-        mint_chain: Chain | None,
-        bridge_chain: Chain | None,
+        cheapest_mint_chain: Chain | None,
+        cheapest_destination: Chain | None,
         bridge: Bridge | None = None,
         lz_bridgeable: bool = False,
     ) -> None:
@@ -42,8 +42,8 @@ class NFT:
         self.mint_chains = mint_chains
         self.chain_to_contract_mapping = chain_to_contract_mapping
         self.abi = abi
-        self.mint_from = mint_chain
-        self.bridge_to = bridge_chain
+        self.cheapest_mint_chain = cheapest_mint_chain
+        self.cheapest_destination = cheapest_destination
         self.bridge = bridge
         self.lz_bridgeable = lz_bridgeable
 
@@ -57,13 +57,13 @@ class NFT:
 
 greenfield_testnet_tutorial_NFT = NFT(
     name="Greenfield Testnet Tutorial NFT",
-    mint_chains=(bsc),
+    mint_chains=(bsc,),
     chain_to_contract_mapping={
         "bsc": "0x13D23d867e73aF912Adf5d5bd47915261eFa28F2",
     },
     abi=read_from_json(GREENFIELD_TESTNET_TUTORIAL_ABI),
-    mint_chain=bsc,
-    bridge_chain=None,
+    cheapest_mint_chain=bsc,
+    cheapest_destination=opBNB,
 )
 
 
@@ -74,42 +74,35 @@ mainnet_alpha_NFT = NFT(
         "core": "0x61DFDbcC65DaF1F60fB1DbE703D84940dA28526c",
     },
     abi=read_from_json(MAINNET_ALPHA_ABI),
-    mint_chain=core,
-    bridge_chain=polygon,
+    cheapest_mint_chain=core,
+    cheapest_destination=polygon,
 )
 
 
 ZK_bridge_on_opBNB_NFT = NFT(
     name="ZK Bridge On OpBNB NFT",
-    mint_chains=(
-        bsc,
-        core,
-        polygon,
-    ),
+    mint_chains=(bsc, core, polygon),
     chain_to_contract_mapping={
         "bsc": "0x9c614a8E5a23725214024d2C3633BE30D44806f9",
         "polygon": "0xfeb105763753e9d26DfD4aae1Ed368aa7cC18260",
         "core": "0x0f83DA622E36Ee42cfeB222257E1baF20E16a491",
     },
     abi=read_from_json(ZK_BRIDGE_ON_OPBNB_ABI),
-    mint_chain=bsc,
-    bridge_chain=opBNB,
+    cheapest_mint_chain=bsc,
+    cheapest_destination=opBNB,
 )
 
 
 ZK_light_client_NFT = NFT(
     name="ZK Light Client NFT",
-    mint_chains=(
-        bsc,
-        polygon,
-    ),
+    mint_chains=(bsc, polygon),
     chain_to_contract_mapping={
         "bsc": "0xD2cCC9EE7Ea2ccd154c727A46D475ddA49E99852",
         "polygon": "0x6b0C248679F493481411a0A14cd5FC2DBBe8Ab02",
     },
     abi=read_from_json(ZK_LIGHT_CLIENT_ABI),
-    mint_chain=bsc,
-    bridge_chain=opBNB,
+    cheapest_mint_chain=bsc,
+    cheapest_destination=opBNB,
 )
 
 nfts_list = [

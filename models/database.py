@@ -1,4 +1,5 @@
 import json
+import random
 from typing import List
 
 from loguru import logger
@@ -8,9 +9,9 @@ from config import (
     MAX_ATTEMPTS,
     PRIVATE_KEYS_PATH,
     PROXIES_PATH,
-    SLEEP_TIME,
     TG_IDS,
     TG_TOKEN,
+    TX_SLEEP_TIME,
     USE_PROXY,
 )
 from utils import read_from_json, read_from_txt, write_to_json
@@ -21,21 +22,13 @@ from .chain import bsc
 class Database:
     def __init__(
         self,
-        sleep_time,
-        retry_count,
-        use_proxy,
-        tg_token,
-        tg_ids,
         account_count,
-        clients_data: List,
+        unfinished_accounts: List,
+        finished_accounts: List,
     ) -> None:
-        self.sleep_time = sleep_time
-        self.retry_count = retry_count
-        self.use_proxy = use_proxy
-        self.tg_token = tg_token
-        self.tg_ids = tg_ids
         self.account_count = account_count
-        self.clients_data = clients_data
+        self.unfinished_accounts = unfinished_accounts
+        self.finished_accounts = finished_accounts
 
     def to_dict(self):
         try:
@@ -47,7 +40,9 @@ class Database:
     def create_db() -> None:
         from .zk_bridge_client import ZKBridgeClient
 
-        clients_data = []
+        unfinished_accounts = []
+        finished_accounts = []
+
         wallets = read_from_txt(PRIVATE_KEYS_PATH)
         proxys = read_from_txt(PROXIES_PATH)
 
@@ -60,18 +55,14 @@ class Database:
                 proxy=proxy,
             )
 
-            clients_data.append(client.to_dict())
+            unfinished_accounts.append(client.to_dict())
 
-        account_count = len(clients_data)
+        account_count = len(unfinished_accounts)
 
         database = Database(
-            sleep_time=SLEEP_TIME,
-            retry_count=MAX_ATTEMPTS,
-            use_proxy=USE_PROXY,
-            tg_token=TG_TOKEN,
-            tg_ids=TG_IDS,
             account_count=account_count,
-            clients_data=clients_data,
+            unfinished_accounts=unfinished_accounts,
+            finished_accounts=finished_accounts,
         )
 
         if write_to_json(DATABASE_PATH, database.to_dict()):
@@ -80,5 +71,26 @@ class Database:
             logger.error("Database creation failed.")
 
     @staticmethod
-    def read_db_from_json(db_path):
-        read_from_json(DATABASE_PATH)
+    def read_db_from_json(db_path=DATABASE_PATH):
+        db = read_from_json(db_path)
+        return Database(
+            db["account_count"],
+            db["unfinished_accounts"],
+            db["finished_accounts"],
+        )
+
+    def get_random_unfinished_account(self):
+        logger.info("Getting a random client.")
+        if self.unfinished_accounts:
+            random_index = random.randrange(len(self.unfinished_accounts))
+            logger.info("Client chosen.")
+            return random_index, self.unfinished_accounts[random_index]
+        else:
+            logger.warning("No unfinished accounts available in the database.")
+            exit()
+
+    def update_db(self):
+        if write_to_json(DATABASE_PATH, self.to_dict()):
+            logger.success("Database updated successfully.")
+        else:
+            logger.error("Failed to update the database.")

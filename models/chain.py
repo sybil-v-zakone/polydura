@@ -9,6 +9,8 @@ class Chain:
         explorer: str,
         decimals: int = 18,
         supports_lz: bool = False,
+        lz_chain_id: int | None = None,
+        zk_chain_id: int | None = None,
     ):
         self.name = name
         self.rpc = rpc
@@ -18,6 +20,8 @@ class Chain:
         self.decimals = decimals
         self.explorer = explorer
         self.supports_lz = supports_lz
+        self.lz_chain_id = lz_chain_id
+        self.zk_chain_id = zk_chain_id
 
     def __str__(self):
         return f"{self.name}"
@@ -29,6 +33,8 @@ class Chain:
             "chain_id": self.chain_id,
             "coin_symbol": self.coin_symbol,
             "supports_lz": self.supports_lz,
+            "lz_chain_id": self.lz_chain_id,
+            "zk_chain_id": self.zk_chain_id,
         }
 
 
@@ -39,6 +45,9 @@ polygon = Chain(
     eip1559_tx=True,
     coin_symbol="MATIC",
     explorer="https://polygonscan.com/",
+    supports_lz=True,
+    lz_chain_id=109,
+    zk_chain_id=4,
 )
 
 
@@ -50,6 +59,8 @@ bsc = Chain(
     coin_symbol="BNB",
     explorer="https://bscscan.com/",
     supports_lz=True,
+    lz_chain_id=102,
+    zk_chain_id=3,
 )
 
 
@@ -60,6 +71,9 @@ core = Chain(
     eip1559_tx=False,
     coin_symbol="CORE",
     explorer="https://scan.coredao.org/",
+    supports_lz=True,
+    lz_chain_id=153,
+    zk_chain_id=17,
 )
 
 
@@ -70,6 +84,9 @@ celo = Chain(
     eip1559_tx=True,
     coin_symbol="CELO",
     explorer="https://celoscan.io/",
+    supports_lz=True,
+    lz_chain_id=125,
+    zk_chain_id=18,
 )
 
 
@@ -80,6 +97,8 @@ arbitrum = Chain(
     eip1559_tx=True,
     coin_symbol="ETH",
     explorer="https://arbiscan.io/",
+    supports_lz=True,
+    lz_chain_id=110,
 )
 
 
@@ -90,6 +109,8 @@ optimism = Chain(
     eip1559_tx=True,
     coin_symbol="ETH",
     explorer="https://optimistic.etherscan.io/",
+    supports_lz=True,
+    lz_chain_id=111,
 )
 
 
@@ -100,6 +121,8 @@ avalanche = Chain(
     eip1559_tx=True,
     coin_symbol="AVAX",
     explorer="https://snowtrace.io/",
+    supports_lz=True,
+    lz_chain_id=106,
 )
 
 
@@ -110,6 +133,9 @@ fantom = Chain(
     eip1559_tx=False,
     coin_symbol="FTM",
     explorer="https://ftmscan.com/",
+    supports_lz=True,
+    lz_chain_id=112,
+    zk_chain_id=6,
 )
 
 
@@ -121,6 +147,7 @@ opBNB = Chain(
     coin_symbol="tBNB",
     explorer="https://opbnbscan.com/",
     supports_lz=False,
+    zk_chain_id=116,
 )
 
 
@@ -131,6 +158,8 @@ combo = Chain(
     eip1559_tx=True,
     coin_symbol="tcBNB",
     explorer="https://combotrace-testnet.nodereal.io/",
+    supports_lz=False,
+    zk_chain_id=114,
 )
 
 
@@ -141,6 +170,9 @@ nova = Chain(
     eip1559_tx=True,
     coin_symbol="ETH",
     explorer="https://nova.arbiscan.io/",
+    supports_lz=True,
+    lz_chain_id=175,
+    zk_chain_id=14,
 )
 
 
@@ -151,6 +183,9 @@ moonbeam = Chain(
     eip1559_tx=True,
     coin_symbol="GLMR",
     explorer="https://moonscan.io/",
+    supports_lz=True,
+    lz_chain_id=126,
+    zk_chain_id=9,
 )
 
 
@@ -161,6 +196,8 @@ gnosis = Chain(
     eip1559_tx=True,
     coin_symbol="XDAI",
     explorer="https://gnosisscan.io/",
+    supports_lz=True,
+    lz_chain_id=145,
 )
 
 
@@ -171,12 +208,15 @@ metis = Chain(
     eip1559_tx=True,
     coin_symbol="METIS",
     explorer="https://andromeda-explorer.metis.io/",
+    supports_lz=True,
+    lz_chain_id=151,
 )
 
 source_chains = [
     polygon,
     bsc,
     core,
+    celo,
 ]
 
 destination_chains = [

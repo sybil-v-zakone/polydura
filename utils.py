@@ -1,7 +1,11 @@
-import functools
 import json
+import random
+import time
+from functools import wraps
 
 from loguru import logger
+
+from config import TX_SLEEP_TIME
 
 
 def read_from_txt(file_path):
@@ -41,3 +45,15 @@ def write_to_json(file_path, data):
             f"Encountered an error while writing to a JSON file: {file_path} | {str(e)}."
         )
         return False
+
+
+def sleep(secs=random.randint(TX_SLEEP_TIME[0], TX_SLEEP_TIME[1])):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            ret = func(*args, **kwargs)
+            time.sleep(secs)
+            return ret
+
+        return wrapper
+
+    return decorator

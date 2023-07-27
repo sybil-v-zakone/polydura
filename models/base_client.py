@@ -6,6 +6,9 @@ from loguru import logger
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
+from config import GAS_MULTIPLIER
+from exceptions.exceptions import GasEstimationError
+
 from .chain import Chain
 
 
@@ -61,7 +64,7 @@ class BaseClient:
         to,
         data=None,
         from_=None,
-        gas_multiplier=1.0,
+        gas_multiplier=GAS_MULTIPLIER,
         value=None,
         max_priority_fee_per_gas: Optional[int] = None,
         max_fee_per_gas: Optional[int] = None,
@@ -109,15 +112,16 @@ class BaseClient:
             gas_estimate = self.w3.eth.estimate_gas(tx_params)
             logger.info(f"Gas estimate: {gas_estimate}")
             tx_params["gas"] = int(gas_estimate * gas_multiplier)
+        except GasEstimationError:
+            logger("Gas required exceeds allowance")
         except Exception as e:
             logger.exception(f"Error estimating gas: {e}")
-            return None
 
         try:
             sign = self.w3.eth.account.sign_transaction(
                 tx_params, self.private_key
             )
-            return self.w3.eth.send_raw_transaction(sign.rawTransaction)
+            hash = self.w3.eth.send_raw_transaction(sign.rawTransaction)
         except Exception as e:
             logger.exception(f"Error sending transaction: {e}")
             return None

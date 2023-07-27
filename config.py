@@ -2,23 +2,6 @@ import os
 import sys
 from pathlib import Path
 
-from models.chain import (
-    arbitrum,
-    avalanche,
-    bsc,
-    celo,
-    combo,
-    core,
-    fantom,
-    gnosis,
-    metis,
-    moonbeam,
-    nova,
-    opBNB,
-    optimism,
-    polygon,
-)
-
 if getattr(sys, "frozen", False):
     ROOT_DIR = Path(sys.executable).parent.absolute()
 else:
@@ -32,9 +15,9 @@ PROXIES_PATH = "data/proxies.txt"
 
 ABI_DIR = os.path.join(ROOT_DIR, "abi")
 
-MORALIS_API_KEY = ""
+TX_SLEEP_TIME = [3, 8]
 
-SLEEP_TIME = [300, 500]
+WEB_SLEEP_TIME = [1, 3]
 
 MAX_ATTEMPTS = 5
 
@@ -46,7 +29,7 @@ TG_IDS = []
 
 BITCH_MODE = True
 
-TOKENS_RANGE = 9000
+TOKENS_RANGE = 1000
 
 GAS_MULTIPLIER = 1.1
 
