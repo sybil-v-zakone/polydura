@@ -30,10 +30,11 @@ def full_warmup():
             if nft.isinstance(NFT):
                 database.update_db()
 
-            if nft is None:
+            elif nft is None:
                 database.update_db()
                 full_warmup()
-            if nft is False:
+
+            elif nft is False:
                 database.accounts_without_balance.append(client.to_dict())
                 database.unfinished_accounts.pop(item_index)
                 database.update_db()
