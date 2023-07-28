@@ -33,6 +33,8 @@ TOKENS_RANGE = 1000
 
 GAS_MULTIPLIER = 1.1
 
+MIN_CLIENT_BALANCE = 40000000000000
+
 GREENFIELD_TESTNET_TUTORIAL_ABI = os.path.join(
     ABI_DIR, "GreenfieldTestnetTutorial_abi.json"
 )

@@ -25,10 +25,12 @@ class Database:
         account_count,
         unfinished_accounts: List,
         finished_accounts: List,
+        accounts_without_balance: List,
     ) -> None:
         self.account_count = account_count
         self.unfinished_accounts = unfinished_accounts
         self.finished_accounts = finished_accounts
+        self.accounts_without_balance = accounts_without_balance
 
     def to_dict(self):
         try:
@@ -42,6 +44,7 @@ class Database:
 
         unfinished_accounts = []
         finished_accounts = []
+        accounts_without_balance = []
 
         wallets = read_from_txt(PRIVATE_KEYS_PATH)
         proxys = read_from_txt(PROXIES_PATH)
@@ -63,6 +66,7 @@ class Database:
             account_count=account_count,
             unfinished_accounts=unfinished_accounts,
             finished_accounts=finished_accounts,
+            accounts_without_balance=accounts_without_balance,
         )
 
         if write_to_json(DATABASE_PATH, database.to_dict()):
@@ -77,6 +81,7 @@ class Database:
             db["account_count"],
             db["unfinished_accounts"],
             db["finished_accounts"],
+            db["accounts_without_balance"],
         )
 
     def get_random_unfinished_account(self):

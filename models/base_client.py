@@ -6,8 +6,7 @@ from loguru import logger
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
-from config import GAS_MULTIPLIER
-from exceptions.exceptions import GasEstimationError
+from config import GAS_MULTIPLIER, MIN_CLIENT_BALANCE
 
 from .chain import Chain
 
@@ -71,7 +70,6 @@ class BaseClient:
     ):
         if not from_:
             from_ = self.public_key
-
         tx_params = {
             "chainId": self.w3.eth.chain_id,
             "nonce": self.w3.eth.get_transaction_count(self.public_key),
@@ -80,11 +78,9 @@ class BaseClient:
         }
         if data:
             tx_params["data"] = data
-
         if self.chain.eip1559_tx:
             w3 = Web3(provider=Web3.HTTPProvider(endpoint_uri=self.chain.rpc))
             w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-
             last_block = w3.eth.get_block("latest")
             if not max_priority_fee_per_gas:
                 max_priority_fee_per_gas = (
@@ -95,35 +91,43 @@ class BaseClient:
             if not max_fee_per_gas:
                 base_fee = int(last_block["baseFeePerGas"] * gas_multiplier)
                 max_fee_per_gas = base_fee + max_priority_fee_per_gas
-
             tx_params["maxPriorityFeePerGas"] = max_priority_fee_per_gas
             tx_params["maxFeePerGas"] = max_fee_per_gas
-
         else:
             if self.chain.chain_id == 56:
                 tx_params["gasPrice"] = Web3.to_wei(1, "gwei")
             else:
                 tx_params["gasPrice"] = self.w3.eth.gas_price
-
         if value:
             tx_params["value"] = value
+
+        try:
+            balance = self.w3.eth.get_balance(from_)
+            logger.info(f"{from_} | Client's balance is: {balance}")
+            if balance < MIN_CLIENT_BALANCE:
+                return False
+        except:
+            logger.info(f"{from_} | Error getting client's balance: ")
+            return None
 
         try:
             gas_estimate = self.w3.eth.estimate_gas(tx_params)
             logger.info(f"Gas estimate: {gas_estimate}")
             tx_params["gas"] = int(gas_estimate * gas_multiplier)
-        except GasEstimationError:
-            logger("Gas required exceeds allowance")
         except Exception as e:
-            logger.exception(f"Error estimating gas: {e}")
+            logger.exception(
+                f"Error estimating gas: {e}",
+            )
+            return False
+        logger.info(f"{from_} | Getting client's balance.")
 
         try:
             sign = self.w3.eth.account.sign_transaction(
                 tx_params, self.private_key
             )
-            hash = self.w3.eth.send_raw_transaction(sign.rawTransaction)
+            return self.w3.eth.send_raw_transaction(sign.rawTransaction)
         except Exception as e:
-            logger.exception(f"Error sending transaction: {e}")
+            logger.exception(f"Error signing transaction: {e}")
             return None
 
     def verify_tx(self, tx_hash) -> bool:

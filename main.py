@@ -33,7 +33,7 @@ start_message = r"""
 Modules:
 1: create_database  | create database
 2: warmup_mode      | minter + bridger
-3: bridge_mode      | bridger of minted NFTs
+3: bridge_mode      | bridger of minted NFTs (in developement)
 """
 
 
@@ -44,8 +44,12 @@ def main():
 
     if module == "1":
         Database.create_db()
-    if module == "2":
+    elif module == "2":
         full_warmup()
+    elif module == "3":
+        logger.warning("Bridge mode is currently in developement.")
+    else:
+        logger.exception("Wrong module selected.")
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ class ZKBridgeClient(BaseClient):
         minted_nfts=[],
         bridged_nfts=[],
         message_sent=False,
-        nfts_to_mint=[
+        nfts_to_mint: list = [
             ZK_bridge_on_opBNB_NFT.name,
             mainnet_alpha_NFT.name,
             ZK_light_client_NFT.name,
@@ -185,6 +185,8 @@ class ZKBridgeClient(BaseClient):
             )
             self.change_chain(random.choice(source_chains))
 
+        logger.info(f"Current chain {self.chain.name}")
+
         contract = self.w3.eth.contract(
             address=Web3.to_checksum_address(
                 nft.chain_to_contract_mapping[f"{self.chain}"]
@@ -199,28 +201,7 @@ class ZKBridgeClient(BaseClient):
             self.public_key
         ).call()
 
-        data = contract.encodeABI("mint")
-
-        if allowed_to_mint > 0:
-            for attempt in range(max_attempts):
-                logger.info(f"{self.public_key} | Sending a mint tx.")
-                tx_hash = self.send_tx(
-                    to=nft.chain_to_contract_mapping[f"{self.chain}"],
-                    data=data,
-                )
-                logger.info(
-                    f"{self.public_key} | Sent a mint tx with a hash: {Web3.to_hex(tx_hash)}"
-                )
-                logger.info(f"{self.public_key} | Verifying tx.")
-                if self.verify_tx(tx_hash=tx_hash):
-                    self.nfts_to_mint.remove(nft_name)
-                    self.minted_nfts.append(nft_name)
-                    return nft
-                else:
-                    logger.error(
-                        f"{self.public_key} | Transaction verification failed."
-                    )
-        else:
+        if allowed_to_mint == 0:
             logger.error(
                 f"{self.public_key} | Mint limit for {nft.name} exceeded."
             )
@@ -228,6 +209,49 @@ class ZKBridgeClient(BaseClient):
             self.minted_nfts.append(nft_name)
 
             return None
+
+        data = contract.encodeABI("mint")
+
+        for attempt in range(max_attempts):
+            logger.info(f"{self.public_key} | Sending a mint tx.")
+            try:
+                tx_hash = self.send_tx(
+                    to=nft.chain_to_contract_mapping[f"{self.chain}"],
+                    data=data,
+                )
+
+                if tx_hash is False:
+                    return False
+                logger.info(
+                    f"{self.public_key} | Sent a mint tx with a hash: {Web3.to_hex(tx_hash)}"
+                )
+
+            except ValueError as e:
+                if "gas required exceeds allowance" in str(e):
+                    logger.error(
+                        f"{self.public_key} | Gas required exceeds allowance. Unable to send the transaction."
+                    )
+                else:
+                    logger.exception(
+                        f"Most likely not enough native for fees: {e}."
+                    )
+                return None
+
+            except Exception as e:
+                logger.exception(
+                    f"Most likely not enough native for fees: {e}."
+                )
+                return None
+
+            logger.info(f"{self.public_key} | Verifying tx.")
+            if self.verify_tx(tx_hash=tx_hash):
+                self.nfts_to_mint.remove(nft_name)
+                self.minted_nfts.append(nft_name)
+                return nft
+            else:
+                logger.error(
+                    f"{self.public_key} | Transaction verification failed."
+                )
 
         logger.error(
             f"{self.public_key} | Max attempts reached without success."
@@ -244,7 +268,9 @@ class ZKBridgeClient(BaseClient):
         )
 
         token_id = self.get_token_id(nft=nft)
-        to = bridge.chain_to_contract_mapping[f"{self.chain}"]
+        to = self.w3.to_checksum_address(
+            bridge.chain_to_contract_mapping[f"{self.chain}"]
+        )
         data = contract.encodeABI("approve", args=(to, token_id))
 
         try:
@@ -299,14 +325,21 @@ class ZKBridgeClient(BaseClient):
                 destination_chain=destination_chain,
                 token_id=token_id,
             )
+        if nft:
+            try:
+                self.minted_nfts.remove(nft.name)
+                self.bridged_nfts.append(nft.name)
 
-        try:
-            self.minted_nfts.remove(nft.name)
-            self.bridged_nfts.append(nft.name)
-        except Exception as e:
-            logger.exception(
-                f"{self.public_key} | Unexpected error updating the database for value <{nft.name}>: {e}"
-            )
+                return True
+            except Exception as e:
+                logger.exception(
+                    f"{self.public_key} | Unexpected error updating the client's data for value <{nft.name}>: {e}"
+                )
+                return None
+        return None
+
+    def send_message():
+        pass
 
     def lz_nft_bridge(self, nft: NFT, token_id: int, destination_chain: Chain):
         logger.info(f"{self.public_key} | Bridging using {lz_bridge.name}")
@@ -491,12 +524,6 @@ class ZKBridgeClient(BaseClient):
         return self.w3.to_hex(
             self.w3.to_bytes(hexstr=self.public_key).rjust(32, b"\x00")
         )
-
-    def get_ip(self):
-        response = self.session.get(
-            "https://api64.ipify.org?format=json"
-        ).json()
-        return response["ip"]
 
     @staticmethod
     def client_from_db_item(db_item):

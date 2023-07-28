@@ -14,12 +14,38 @@ def full_warmup():
             client = ZKBridgeClient.client_from_db_item(db_item=db_item)
             client.load_profile()
 
+            if not client.nfts_to_mint:
+                database.finished_accounts.append(client.to_dict())
+                database.unfinished_accounts.pop(item_index)
+                database.update_db()
+
+                if not database.unfinished_accounts:
+                    logger.success("All accounts are warmed up.")
+                    exit()
+
+                full_warmup()
+
             nft = client.mint_random_nft()
             if nft is None:
+                database.update_db()
                 full_warmup()
-            client.bridge_nft(nft=nft)
+            if nft is False:
+                database.accounts_without_balance.append(client.to_dict())
+                database.unfinished_accounts.pop(item_index)
+                full_warmup()
+
+            nft = client.bridge_nft(nft=nft)
+            if nft is False:
+                database.accounts_without_balance.append(client.to_dict())
+                database.unfinished_accounts.pop(item_index)
+                database.update_db()
+                full_warmup()
+            if nft is None:
+                database.update_db()
+                full_warmup()
+
         except Exception as e:
             logger.exception(f"Exception in full warmup mode: {e}")
         full_warmup()
     except Exception as e:
-        pass
+        logger.exception("An error occurred when doing full warmup.")
