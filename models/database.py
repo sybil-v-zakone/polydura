@@ -4,16 +4,7 @@ from typing import List
 
 from loguru import logger
 
-from config import (
-    DATABASE_PATH,
-    MAX_ATTEMPTS,
-    PRIVATE_KEYS_PATH,
-    PROXIES_PATH,
-    TG_IDS,
-    TG_TOKEN,
-    TX_SLEEP_TIME,
-    USE_PROXY,
-)
+from config import DATABASE_PATH, PRIVATE_KEYS_PATH, PROXIES_PATH, USE_PROXY
 from utils import read_from_json, read_from_txt, write_to_json
 
 from .chain import bsc
