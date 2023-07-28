@@ -1,7 +1,6 @@
 from typing import Optional
 
 import requests
-from fake_useragent import UserAgent
 from loguru import logger
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
@@ -17,36 +16,24 @@ class BaseClient:
         private_key: str,
         chain: Chain,
         proxy,
-        user_agent=UserAgent().random,
     ) -> None:
         self.private_key = private_key
         self.chain = chain
         self.proxy = proxy
-        self.user_agent = user_agent
         self.session = self.create_session()
-        self.w3 = Web3(
-            Web3.HTTPProvider(
-                endpoint_uri=self.chain.rpc, session=self.session
-            )
-        )
-        self.public_key = Web3.to_checksum_address(
-            self.w3.eth.account.from_key(private_key).address
-        )
+        self.w3 = Web3(Web3.HTTPProvider(endpoint_uri=self.chain.rpc, session=self.session))
+        self.public_key = Web3.to_checksum_address(self.w3.eth.account.from_key(private_key).address)
 
     @staticmethod
     def get_max_priority_fee_per_gas(w3: Web3, block: dict) -> int:
         block_number = block["number"]
-        latest_block_transaction_count = w3.eth.get_block_transaction_count(
-            block_number
-        )
+        latest_block_transaction_count = w3.eth.get_block_transaction_count(block_number)
         max_priority_fee_per_gas_list = []
         for i in range(latest_block_transaction_count):
             try:
                 transaction = w3.eth.get_transaction_by_block(block_number, i)
                 if "maxPriorityFeePerGas" in transaction:
-                    max_priority_fee_per_gas_list.append(
-                        transaction["maxPriorityFeePerGas"]
-                    )
+                    max_priority_fee_per_gas_list.append(transaction["maxPriorityFeePerGas"])
             except Exception as e:
                 continue
 
@@ -54,9 +41,7 @@ class BaseClient:
             max_priority_fee_per_gas = w3.eth.max_priority_fee
         else:
             max_priority_fee_per_gas_list.sort()
-            max_priority_fee_per_gas = max_priority_fee_per_gas_list[
-                len(max_priority_fee_per_gas_list) // 2
-            ]
+            max_priority_fee_per_gas = max_priority_fee_per_gas_list[len(max_priority_fee_per_gas_list) // 2]
         return max_priority_fee_per_gas
 
     def send_tx(
@@ -84,11 +69,7 @@ class BaseClient:
             w3.middleware_onion.inject(geth_poa_middleware, layer=0)
             last_block = w3.eth.get_block("latest")
             if not max_priority_fee_per_gas:
-                max_priority_fee_per_gas = (
-                    BaseClient.get_max_priority_fee_per_gas(
-                        w3=w3, block=last_block
-                    )
-                )
+                max_priority_fee_per_gas = BaseClient.get_max_priority_fee_per_gas(w3=w3, block=last_block)
             if not max_fee_per_gas:
                 base_fee = int(last_block["baseFeePerGas"] * gas_multiplier)
                 max_fee_per_gas = base_fee + max_priority_fee_per_gas
@@ -123,9 +104,7 @@ class BaseClient:
         logger.info(f"{from_} | Getting client's balance.")
 
         try:
-            sign = self.w3.eth.account.sign_transaction(
-                tx_params, self.private_key
-            )
+            sign = self.w3.eth.account.sign_transaction(tx_params, self.private_key)
             return self.w3.eth.send_raw_transaction(sign.rawTransaction)
         except Exception as e:
             logger.exception(f"Error signing transaction: {e}")
@@ -133,24 +112,16 @@ class BaseClient:
 
     def verify_tx(self, tx_hash) -> bool:
         try:
-            data = self.w3.eth.wait_for_transaction_receipt(
-                tx_hash, timeout=200
-            )
+            data = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=200)
             if data is None:
-                logger.warning(
-                    f"{self.public_key} | transaction receipt not available yet."
-                )
+                logger.warning(f"{self.public_key} | transaction receipt not available yet.")
                 return False
 
             if "status" in data and data["status"] == 1:
-                logger.success(
-                    f"{self.public_key} | transaction was successful: {tx_hash.hex()}"
-                )
+                logger.success(f"{self.public_key} | transaction was successful: {tx_hash.hex()}")
                 return True
             else:
-                logger.error(
-                    f'{self.public_key} | transaction failed {data["transactionHash"].hex()}'
-                )
+                logger.error(f'{self.public_key} | transaction failed {data["transactionHash"].hex()}')
                 return False
         except Exception as err:
             logger.exception(f"{self.public_key} | unexpected error: {err}")
