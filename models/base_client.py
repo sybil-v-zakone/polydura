@@ -17,11 +17,12 @@ class BaseClient:
         private_key: str,
         chain: Chain,
         proxy,
+        user_agent=UserAgent().random,
     ) -> None:
         self.private_key = private_key
         self.chain = chain
         self.proxy = proxy
-        self.user_agent = UserAgent().random
+        self.user_agent = user_agent
         self.session = self.create_session()
         self.w3 = Web3(
             Web3.HTTPProvider(
