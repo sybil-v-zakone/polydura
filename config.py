@@ -23,10 +23,6 @@ MAX_ATTEMPTS = 5
 
 USE_PROXY = False
 
-TG_TOKEN = ""
-
-TG_IDS = []
-
 BITCH_MODE = True
 
 TOKENS_RANGE = 1000
@@ -35,7 +31,6 @@ GAS_MULTIPLIER = 1.1
 
 # minimum balance in wei
 MIN_CLIENT_BALANCE = 40000000000000
-
 
 # NFTs ABIs
 
