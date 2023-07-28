@@ -201,28 +201,29 @@ class ZKBridgeClient(BaseClient):
 
         data = contract.encodeABI("mint")
 
-        try:
-            logger.info(f"{self.public_key} | Sending a mint tx.")
+        for _ in range(max_attempts):
+            try:
+                logger.info(f"{self.public_key} | Sending a mint tx.")
 
-            tx_hash = self.send_tx(
-                to=nft.chain_to_contract_mapping[f"{self.chain}"],
-                data=data,
-            )
-            if tx_hash is False:
-                return False
-            logger.info(f"{self.public_key} | Sent a mint tx with a hash: {Web3.to_hex(tx_hash)}")
-        except Exception as e:
-            logger.exception(f"Most likely not enough native for fees: {e}.")
-            return None
+                tx_hash = self.send_tx(
+                    to=nft.chain_to_contract_mapping[f"{self.chain}"],
+                    data=data,
+                )
+                if tx_hash == False:
+                    return False
+                logger.info(f"{self.public_key} | Sent a mint tx with a hash: {Web3.to_hex(tx_hash)}")
+            except Exception as e:
+                logger.exception(f"Most likely not enough native for fees: {e}.")
+                return None
 
-        logger.info(f"{self.public_key} | Verifying tx.")
+            logger.info(f"{self.public_key} | Verifying tx.")
 
-        if self.verify_tx(tx_hash=tx_hash):
-            self.nfts_to_mint.remove(nft_name)
-            self.minted_nfts.append(nft_name)
-            return nft
-        else:
-            logger.error(f"{self.public_key} | Transaction verification failed.")
+            if self.verify_tx(tx_hash=tx_hash):
+                self.nfts_to_mint.remove(nft_name)
+                self.minted_nfts.append(nft_name)
+                return nft
+            else:
+                logger.error(f"{self.public_key} | Transaction verification failed.")
         return False
 
     @sleep(secs=random.randint(10, 20))
@@ -298,7 +299,7 @@ class ZKBridgeClient(BaseClient):
     def send_message():
         pass
 
-    def lz_nft_bridge(self, nft: NFT, token_id: int, destination_chain: Chain):
+    def lz_nft_bridge(self, nft: NFT, token_id: int, destination_chain: Chain, max_attempts=MAX_ATTEMPTS):
         logger.info(f"{self.public_key} | Bridging using {lz_bridge.name}")
 
         nft_contract_address = nft.chain_to_contract_mapping[f"{self.chain.name}"]
@@ -332,26 +333,28 @@ class ZKBridgeClient(BaseClient):
 
         logger.info(f"LayerZero bridge fee is: {fee}")
         logger.info(f"{self.public_key} | Sending LayerZero bridge tx.")
-        try:
-            tx_hash = self.send_tx(
-                to=bridge_contract_address,
-                data=data,
-                value=fee,
-            )
+        for _ in range(max_attempts):
+            try:
+                tx_hash = self.send_tx(
+                    to=bridge_contract_address,
+                    data=data,
+                    value=fee,
+                )
 
-            logger.info(f"{self.public_key} | Sent a LayerZero bridge tx with a hash: {Web3.to_hex(tx_hash)}")
-            logger.info(f"{self.public_key} | Verifying tx.")
+                logger.info(f"{self.public_key} | Sent a LayerZero bridge tx with a hash: {Web3.to_hex(tx_hash)}")
+                logger.info(f"{self.public_key} | Verifying tx.")
 
-            if self.verify_tx(tx_hash=tx_hash):
-                return nft
-            else:
+                if self.verify_tx(tx_hash=tx_hash):
+                    return nft
+                else:
+                    return None
+
+            except Exception as e:
+                logger.exception(f"{self.public_key} | An error occurred while bridging with LayerZero: {e}")
                 return None
+        return None
 
-        except Exception as e:
-            logger.exception(f"{self.public_key} | An error occurred while bridging with LayerZero: {e}")
-            return None
-
-    def zk_nft_bridge(self, nft: NFT, token_id: int, destination_chain: Chain):
+    def zk_nft_bridge(self, nft: NFT, token_id: int, destination_chain: Chain, max_attempts=MAX_ATTEMPTS):
         logger.info(f"{self.public_key} | Bridging using {zk_bridge.name}")
 
         if BITCH_MODE:
@@ -367,9 +370,9 @@ class ZKBridgeClient(BaseClient):
             abi=zk_bridge.abi,
         )
 
-        fee = bridge_contract.functions.fee(destination_chain.zk_chain_id).call()
-
         zero_padded_public_address = self.get_zero_padded_address()
+
+        fee = bridge_contract.functions.fee(destination_chain.zk_chain_id).call()
 
         data = bridge_contract.encodeABI(
             "transferNFT",
@@ -381,27 +384,30 @@ class ZKBridgeClient(BaseClient):
             ),
         )
 
-        logger.info(f"ZKbridge bridge fee is: {fee}")
-        logger.info(f"{self.public_key} | Sending ZKBridge bridge tx.")
+        for _ in range(max_attempts):
+            logger.info(f"ZKbridge bridge fee is: {fee}")
+            logger.info(f"{self.public_key} | Sending ZKBridge bridge tx.")
 
-        try:
-            tx_hash = self.send_tx(
-                bridge_contract_address,
-                data=data,
-                value=fee,
-            )
+            try:
+                tx_hash = self.send_tx(
+                    bridge_contract_address,
+                    data=data,
+                    value=fee,
+                )
 
-            logger.info(f"{self.public_key} | Sent a ZKBridge bridge tx with a hash: {Web3.to_hex(tx_hash)}")
-            logger.info("Verifying tx.")
+                logger.info(f"{self.public_key} | Sent a ZKBridge bridge tx with a hash: {Web3.to_hex(tx_hash)}")
+                logger.info("Verifying tx.")
 
-            if self.verify_tx(tx_hash=tx_hash):
-                return nft
-            else:
+                if self.verify_tx(tx_hash=tx_hash):
+                    return nft
+                else:
+                    return None
+
+            except Exception as e:
+                logger.exception(f"{self.public_key} | An error occurred while bridging with ZKBridge: {e}.")
                 return None
 
-        except Exception as e:
-            logger.exception(f"{self.public_key} | An error occurred while bridging with ZKBridge: {e}.")
-            return None
+        return None
 
     def get_token_id(self, nft: NFT):
         contract = self.w3.eth.contract(
