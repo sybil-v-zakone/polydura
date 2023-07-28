@@ -21,7 +21,7 @@ WEB_SLEEP_TIME = [1, 3]
 
 MAX_ATTEMPTS = 5
 
-USE_PROXY = True
+USE_PROXY = False
 
 TG_TOKEN = ""
 

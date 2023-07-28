@@ -32,6 +32,8 @@ def full_warmup():
             if nft is False:
                 database.accounts_without_balance.append(client.to_dict())
                 database.unfinished_accounts.pop(item_index)
+                database.update_db()
+
                 full_warmup()
 
             nft = client.bridge_nft(nft=nft)
@@ -39,6 +41,7 @@ def full_warmup():
                 database.accounts_without_balance.append(client.to_dict())
                 database.unfinished_accounts.pop(item_index)
                 database.update_db()
+
                 full_warmup()
             if nft is None:
                 database.update_db()

@@ -1,6 +1,5 @@
 import random
 
-import requests
 from eth_abi.packed import encode_packed
 from eth_account.messages import encode_defunct
 from loguru import logger

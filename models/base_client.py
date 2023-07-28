@@ -103,7 +103,7 @@ class BaseClient:
 
         try:
             balance = self.w3.eth.get_balance(from_)
-            logger.info(f"{from_} | Client's balance is: {balance}")
+            logger.warning(f"{from_} | Client's balance is: {balance}")
             if balance < MIN_CLIENT_BALANCE:
                 return False
         except:
