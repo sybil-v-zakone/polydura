@@ -20,6 +20,10 @@ from utils import sleep
 from .base_client import BaseClient
 from .NFT import (
     NFT,
+    Pandra_CodeConqueror_NFT,
+    Pandra_EcoGuardian_NFT,
+    Pandra_MelodyMaven_NFT,
+    Pandra_PixelProwler_NFT,
     ZK_bridge_on_opBNB_NFT,
     ZK_light_client_NFT,
     greenfield_testnet_tutorial_NFT,
@@ -42,6 +46,10 @@ class ZKBridgeClient(BaseClient):
             mainnet_alpha_NFT.name,
             ZK_light_client_NFT.name,
             greenfield_testnet_tutorial_NFT.name,
+            Pandra_CodeConqueror_NFT.name,
+            Pandra_PixelProwler_NFT.name,
+            Pandra_EcoGuardian_NFT.name,
+            Pandra_MelodyMaven_NFT.name,
         ],
     ) -> None:
         super().__init__(private_key, chain, proxy)
@@ -55,6 +63,7 @@ class ZKBridgeClient(BaseClient):
             "private_key": self.private_key,
             "public_key": self.public_key,
             "proxy": self.proxy,
+            "user_agent": self.user_agent,
             "chain": self.chain.name,
             "nfts_to_mint": self.nfts_to_mint,
             "minted_nfts": self.minted_nfts,
@@ -257,7 +266,7 @@ class ZKBridgeClient(BaseClient):
         )
         return False
 
-    @sleep()
+    @sleep(secs=random.randint(10, 20))
     def approve_nft(self, bridge: Bridge, nft: NFT):
         nft_contract_address = nft.chain_to_contract_mapping[f"{self.chain}"]
 
@@ -329,7 +338,7 @@ class ZKBridgeClient(BaseClient):
                 self.minted_nfts.remove(nft.name)
                 self.bridged_nfts.append(nft.name)
 
-                return True
+                return nft
             except Exception as e:
                 logger.exception(
                     f"{self.public_key} | Unexpected error updating the client's data for value <{nft.name}>: {e}"
@@ -529,6 +538,7 @@ class ZKBridgeClient(BaseClient):
         private_key = db_item.get("private_key")
         chain_name = db_item.get("chain")
         proxy = db_item.get("proxy")
+        user_agent = db_item.get("user_agent")
         nfts_to_mint = db_item.get(
             "nfts_to_mint",
             [
@@ -536,6 +546,10 @@ class ZKBridgeClient(BaseClient):
                 mainnet_alpha_NFT.name,
                 ZK_light_client_NFT.name,
                 greenfield_testnet_tutorial_NFT.name,
+                Pandra_CodeConqueror_NFT.name,
+                Pandra_PixelProwler_NFT.name,
+                Pandra_EcoGuardian_NFT.name,
+                Pandra_MelodyMaven_NFT.name,
             ],
         )
         minted_nfts = db_item.get("minted_nfts", [])
@@ -551,6 +565,7 @@ class ZKBridgeClient(BaseClient):
             private_key=private_key,
             chain=chain,
             proxy=proxy,
+            user_agent=user_agent,
             nfts_to_mint=nfts_to_mint,
             minted_nfts=minted_nfts,
             bridged_nfts=bridged_nfts,
