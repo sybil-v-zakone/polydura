@@ -2,6 +2,7 @@ from loguru import logger
 
 from config import DATABASE_PATH
 from models.database import Database
+from models.NFT import NFT
 from models.zk_bridge_client import ZKBridgeClient
 
 
@@ -26,6 +27,9 @@ def full_warmup():
                 full_warmup()
 
             nft = client.mint_random_nft()
+            if nft.isinstance(NFT):
+                database.update_db()
+
             if nft is None:
                 database.update_db()
                 full_warmup()
