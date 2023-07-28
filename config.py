@@ -15,9 +15,9 @@ PROXIES_PATH = "data/proxies.txt"
 
 ABI_DIR = os.path.join(ROOT_DIR, "abi")
 
-TX_SLEEP_TIME = [3, 8]
+TX_SLEEP_TIME = [200, 500]
 
-WEB_SLEEP_TIME = [1, 3]
+REQUEST_SLEEP_TIME = [5, 15]
 
 MAX_ATTEMPTS = 5
 

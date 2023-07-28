@@ -159,4 +159,5 @@ nfts_list = [
     Pandra_CodeConqueror_NFT,
     Pandra_PixelProwler_NFT,
     Pandra_EcoGuardian_NFT,
+    Pandra_MelodyMaven_NFT,
 ]

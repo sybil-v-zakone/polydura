@@ -9,8 +9,8 @@ from config import (
     BITCH_MODE,
     GAS_MULTIPLIER,
     MAX_ATTEMPTS,
+    REQUEST_SLEEP_TIME,
     TOKENS_RANGE,
-    WEB_SLEEP_TIME,
     headers,
 )
 from models.bridge import Bridge, lz_bridge, zk_bridge
@@ -106,7 +106,7 @@ class ZKBridgeClient(BaseClient):
                 f"{self.public_key} | Exception occurred when generating a signature: {e}"
             )
 
-    @sleep(secs=random.randint(WEB_SLEEP_TIME[0], WEB_SLEEP_TIME[1]))
+    @sleep(secs=random.randint(REQUEST_SLEEP_TIME[0], REQUEST_SLEEP_TIME[1]))
     def get_cookie(self):
         signature = self.get_signature()
 
@@ -141,7 +141,7 @@ class ZKBridgeClient(BaseClient):
                 f"{self.public_key} | Did not recieve the cookie: {e}"
             )
 
-    @sleep(secs=random.randint(WEB_SLEEP_TIME[0], WEB_SLEEP_TIME[1]))
+    @sleep(secs=random.randint(REQUEST_SLEEP_TIME[0], REQUEST_SLEEP_TIME[1]))
     def load_profile(self):
         cookie = self.get_cookie()
 
@@ -220,50 +220,32 @@ class ZKBridgeClient(BaseClient):
 
         data = contract.encodeABI("mint")
 
-        for attempt in range(max_attempts):
-            logger.info(f"{self.public_key} | Sending a mint tx.")
-            try:
-                tx_hash = self.send_tx(
-                    to=nft.chain_to_contract_mapping[f"{self.chain}"],
-                    data=data,
-                )
+        logger.info(f"{self.public_key} | Sending a mint tx.")
 
-                if tx_hash is False:
-                    return False
-                logger.info(
-                    f"{self.public_key} | Sent a mint tx with a hash: {Web3.to_hex(tx_hash)}"
-                )
+        try:
+            tx_hash = self.send_tx(
+                to=nft.chain_to_contract_mapping[f"{self.chain}"],
+                data=data,
+            )
+            if tx_hash is False:
+                return False
+            logger.info(
+                f"{self.public_key} | Sent a mint tx with a hash: {Web3.to_hex(tx_hash)}"
+            )
+        except Exception as e:
+            logger.exception(f"Most likely not enough native for fees: {e}.")
+            return None
 
-            except ValueError as e:
-                if "gas required exceeds allowance" in str(e):
-                    logger.error(
-                        f"{self.public_key} | Gas required exceeds allowance. Unable to send the transaction."
-                    )
-                else:
-                    logger.exception(
-                        f"Most likely not enough native for fees: {e}."
-                    )
-                return None
+        logger.info(f"{self.public_key} | Verifying tx.")
 
-            except Exception as e:
-                logger.exception(
-                    f"Most likely not enough native for fees: {e}."
-                )
-                return None
-
-            logger.info(f"{self.public_key} | Verifying tx.")
-            if self.verify_tx(tx_hash=tx_hash):
-                self.nfts_to_mint.remove(nft_name)
-                self.minted_nfts.append(nft_name)
-                return nft
-            else:
-                logger.error(
-                    f"{self.public_key} | Transaction verification failed."
-                )
-
-        logger.error(
-            f"{self.public_key} | Max attempts reached without success."
-        )
+        if self.verify_tx(tx_hash=tx_hash):
+            self.nfts_to_mint.remove(nft_name)
+            self.minted_nfts.append(nft_name)
+            return nft
+        else:
+            logger.error(
+                f"{self.public_key} | Transaction verification failed."
+            )
         return False
 
     @sleep(secs=random.randint(10, 20))
