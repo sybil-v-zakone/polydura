@@ -27,7 +27,8 @@ def full_warmup():
                 full_warmup()
 
             nft = client.mint_random_nft()
-            if nft.isinstance(NFT):
+
+            if isinstance(nft, NFT):
                 database.update_db()
 
             elif nft is None:
