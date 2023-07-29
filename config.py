@@ -21,11 +21,11 @@ REQUEST_SLEEP_TIME = [5, 15]
 
 MAX_ATTEMPTS = 5
 
-USE_PROXY = False
+USE_PROXY = False  # Use proxy if "True" else "False"
 
-BITCH_MODE = True
+BITCH_MODE = True  # Use cheapest routes if "True", if "False" use random routes
 
-TOKENS_RANGE = 1000
+TOKENS_RANGE = 1000  # Range for each step when checking client's NFT token ID
 
 GAS_MULTIPLIER = 1.1
 
@@ -34,9 +34,7 @@ MIN_CLIENT_BALANCE = 40000000000000
 
 # NFTs ABIs
 
-GREENFIELD_TESTNET_TUTORIAL_ABI = os.path.join(
-    ABI_DIR, "GreenfieldTestnetTutorial_abi.json"
-)
+GREENFIELD_TESTNET_TUTORIAL_ABI = os.path.join(ABI_DIR, "GreenfieldTestnetTutorial_abi.json")
 
 MAINNET_ALPHA_ABI = os.path.join(ABI_DIR, "MainnetAlpha_abi.json")
 
@@ -44,9 +42,7 @@ ZK_LIGHT_CLIENT_ABI = os.path.join(ABI_DIR, "ZKLightClient_abi.json")
 
 ZK_BRIDGE_ON_OPBNB_ABI = os.path.join(ABI_DIR, "ZKBridgeOnOpBNB_abi.json")
 
-PANDRA_CODECONQUEROR_ABI = os.path.join(
-    ABI_DIR, "PandraCodeConqueror_abi.json"
-)
+PANDRA_CODECONQUEROR_ABI = os.path.join(ABI_DIR, "PandraCodeConqueror_abi.json")
 
 PANDRA_PIXELPROWLER_ABI = os.path.join(ABI_DIR, "PandraPixelProwler_abi.json")
 
