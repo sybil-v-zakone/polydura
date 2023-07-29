@@ -159,11 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Private keys
-private_keys.txt
-
 database.json
-proxies.txt
 
 .DS_Store
 
