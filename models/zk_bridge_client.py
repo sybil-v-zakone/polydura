@@ -187,7 +187,6 @@ class ZKBridgeClient(BaseClient):
             abi=nft.abi,
         )
 
-        logger.info(f"{self.public_key} | Contract initialized.")
         logger.info(f"{self.public_key} | Checking amount of minted NFTs.")
 
         allowed_to_mint = contract.functions.getMintSurplus(self.public_key).call()
@@ -210,7 +209,7 @@ class ZKBridgeClient(BaseClient):
                     data=data,
                 )
                 if tx_hash == False:
-                    return False
+                    pass
                 logger.info(f"{self.public_key} | Sent a mint tx with a hash: {Web3.to_hex(tx_hash)}")
             except Exception as e:
                 logger.exception(f"Most likely not enough native for fees: {e}.")
@@ -227,7 +226,7 @@ class ZKBridgeClient(BaseClient):
         return False
 
     @sleep(secs=random.randint(10, 20))
-    def approve_nft(self, bridge: Bridge, nft: NFT):
+    def approve_nft(self, bridge: Bridge, nft: NFT, max_attempts=MAX_ATTEMPTS):
         nft_contract_address = nft.chain_to_contract_mapping[f"{self.chain}"]
 
         contract = self.w3.eth.contract(
@@ -239,23 +238,25 @@ class ZKBridgeClient(BaseClient):
         to = self.w3.to_checksum_address(bridge.chain_to_contract_mapping[f"{self.chain}"])
         data = contract.encodeABI("approve", args=(to, token_id))
 
-        try:
-            tx_hash = self.send_tx(
-                to=nft_contract_address,
-                data=data,
-                gas_multiplier=GAS_MULTIPLIER,
-            )
+        for _ in range(max_attempts):
+            try:
+                tx_hash = self.send_tx(
+                    to=nft_contract_address,
+                    data=data,
+                    gas_multiplier=GAS_MULTIPLIER,
+                )
 
-            logger.info(f"{self.public_key} | Sent an approve tx with a hash: {Web3.to_hex(tx_hash)}")
-            logger.info(f"{self.public_key} | Verifying tx.")
+                logger.info(f"{self.public_key} | Sent an approve tx with a hash: {Web3.to_hex(tx_hash)}")
+                logger.info(f"{self.public_key} | Verifying tx.")
 
-            if self.verify_tx(tx_hash=tx_hash):
-                return token_id
-            else:
-                return None
+                if self.verify_tx(tx_hash=tx_hash):
+                    return token_id
+                else:
+                    return None
 
-        except Exception as e:
-            logger.info(f"{self.public_key} | Error occurred while approving {nft.name} for {bridge.name}.")
+            except Exception as e:
+                logger.info(f"{self.public_key} | Error occurred while approving {nft.name} for {bridge.name}.")
+            return None
 
     @sleep()
     def bridge_nft(self, nft: NFT):
@@ -341,6 +342,9 @@ class ZKBridgeClient(BaseClient):
                     value=fee,
                 )
 
+                if tx_hash is False:
+                    pass
+
                 logger.info(f"{self.public_key} | Sent a LayerZero bridge tx with a hash: {Web3.to_hex(tx_hash)}")
                 logger.info(f"{self.public_key} | Verifying tx.")
 
@@ -394,6 +398,9 @@ class ZKBridgeClient(BaseClient):
                     data=data,
                     value=fee,
                 )
+
+                if tx_hash is False:
+                    pass
 
                 logger.info(f"{self.public_key} | Sent a ZKBridge bridge tx with a hash: {Web3.to_hex(tx_hash)}")
                 logger.info("Verifying tx.")

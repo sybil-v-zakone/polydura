@@ -64,6 +64,7 @@ class BaseClient:
         }
         if data:
             tx_params["data"] = data
+
         if self.chain.eip1559_tx:
             w3 = Web3(provider=Web3.HTTPProvider(endpoint_uri=self.chain.rpc))
             w3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -75,6 +76,7 @@ class BaseClient:
                 max_fee_per_gas = base_fee + max_priority_fee_per_gas
             tx_params["maxPriorityFeePerGas"] = max_priority_fee_per_gas
             tx_params["maxFeePerGas"] = max_fee_per_gas
+
         else:
             if self.chain.chain_id == 56:
                 tx_params["gasPrice"] = Web3.to_wei(1, "gwei")
@@ -113,6 +115,7 @@ class BaseClient:
     def verify_tx(self, tx_hash) -> bool:
         try:
             data = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=200)
+
             if data is None:
                 logger.warning(f"{self.public_key} | transaction receipt not available yet.")
                 return False
