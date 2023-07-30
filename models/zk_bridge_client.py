@@ -2,21 +2,22 @@ import random
 
 from eth_abi.packed import encode_packed
 from eth_account.messages import encode_defunct
-from fake_useragent import UserAgent
 from loguru import logger
 from web3 import Web3
 
 from config import (
     BITCH_MODE,
     GAS_MULTIPLIER,
+    LZ_MAILER_ABI,
     MAX_ATTEMPTS,
+    MESSENGER_CONTRACT_ADDRESS,
     REQUEST_SLEEP_TIME,
     TOKENS_RANGE,
     headers,
 )
 from models.bridge import Bridge, lz_bridge, zk_bridge
-from models.chain import Chain, destination_chains, source_chains
-from utils import sleep
+from models.chain import Chain, destination_chains, opBNB, source_chains
+from utils import read_from_json, sleep
 
 from .base_client import BaseClient
 from .NFT import (
@@ -39,7 +40,7 @@ class ZKBridgeClient(BaseClient):
         private_key: str,
         chain: Chain,
         proxy,
-        user_agent=UserAgent().random,
+        user_agent,
         minted_nfts=[],
         bridged_nfts=[],
         message_sent=False,
@@ -297,8 +298,58 @@ class ZKBridgeClient(BaseClient):
                 return None
         return None
 
-    def send_message():
-        pass
+    @sleep(secs=random.randint(10, 20))
+    def send_message(self):
+        messenger_contract = self.w3.eth.contract(
+            address=MESSENGER_CONTRACT_ADDRESS, abi=read_from_json(LZ_MAILER_ABI)
+        )
+        text = self.session.get("https://loripsum.net/api/1").text
+
+        message = self.save_message(text)
+        destination_address = "0x3E0768eb40751109242d6e5E40F2F10dfd0C0154"
+        destination_chain_id = opBNB.zk_chain_id
+        recipient = self.public_key
+        fee = messenger_contract.functions.fees(destination_chain_id).call()
+
+        data = messenger_contract.encodeABI(
+            "zkSendMessage",
+            args=(
+                destination_chain_id,
+                destination_address,
+                recipient,
+                message,
+            ),
+        )
+
+        try:
+            tx_hash = self.send_tx(
+                to=MESSENGER_CONTRACT_ADDRESS,
+                data=data,
+                value=fee,
+            )
+
+            logger.info(f"{self.public_key} | Sent a message tx: {Web3.to_hex(tx_hash)}.")
+
+            if self.verify_tx(tx_hash=tx_hash):
+                self.message_sent = True
+                return True
+            else:
+                return False
+        except Exception as e:
+            logger.exception(f"Error sending message: {e}.")
+            return False
+
+    def save_message(self, message: str):
+        json_payload = {"text": f"{message}"}
+
+        try:
+            respone = self.session.post("https://gfapi.zkbridge.com/v1/saveMessage", json=json_payload).json()
+            if respone["msg"] == "success":
+                return respone["data"]["uri"]
+            return False
+        except:
+            logger.error("Couldn't save a message.")
+            return False
 
     def lz_nft_bridge(self, nft: NFT, token_id: int, destination_chain: Chain, max_attempts=MAX_ATTEMPTS):
         logger.info(f"{self.public_key} | Bridging using {lz_bridge.name}")

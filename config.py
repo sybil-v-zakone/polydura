@@ -56,6 +56,10 @@ ZK_BRIDGE_ABI = os.path.join(ABI_DIR, "ZKBridge_abi.json")
 
 LZ_BRIDGE_ABI = os.path.join(ABI_DIR, "LZBridge_abi.json")
 
+# Mailer ABI
+
+LZ_MAILER_ABI = os.path.join(ABI_DIR, "LzMailer_abi.json")
+
 headers = {
     "authority": "api.zkbridge.com",
     "method": "OPTIONS",
@@ -72,3 +76,5 @@ headers = {
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-site",
 }
+
+MESSENGER_CONTRACT_ADDRESS = "0xf0295A8caD5f287CC52b6F5994fE4aa6FB6e8D4B"

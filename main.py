@@ -2,6 +2,7 @@ from loguru import logger
 
 from models.database import Database
 from modules.full_warmup import full_warmup
+from modules.messenger import messenger
 
 start_message = r"""
 
@@ -33,6 +34,7 @@ start_message = r"""
 Modules:
 1: create_database  | create database
 2: warmup_mode      | minter + bridger
+3: messenger        | message sender 
 """
 
 
@@ -45,6 +47,8 @@ def main():
         Database.create_db()
     elif module == "2":
         full_warmup()
+    elif module == "3":
+        messenger()
     else:
         logger.exception("Wrong module selected.")
 

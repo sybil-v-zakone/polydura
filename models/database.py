@@ -2,6 +2,7 @@ import json
 import random
 from typing import List
 
+from fake_useragent import UserAgent
 from loguru import logger
 
 from config import DATABASE_PATH, PRIVATE_KEYS_PATH, PROXIES_PATH, USE_PROXY
@@ -43,10 +44,12 @@ class Database:
         for wallet in wallets:
             wallet_index = wallets.index(wallet)
             proxy = proxys[wallet_index] if USE_PROXY else None
+            user_agent = UserAgent().random
             client = ZKBridgeClient(
                 wallet,
                 chain=bsc,
                 proxy=proxy,
+                user_agent=user_agent,
             )
 
             unfinished_accounts.append(client.to_dict())
