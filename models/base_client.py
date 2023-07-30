@@ -79,7 +79,7 @@ class BaseClient:
 
         else:
             if self.chain.chain_id == 56:
-                tx_params["gasPrice"] = Web3.to_wei(1, "gwei")
+                tx_params["gasPrice"] = Web3.to_wei(1.2, "gwei")
             else:
                 tx_params["gasPrice"] = self.w3.eth.gas_price
         if value:
